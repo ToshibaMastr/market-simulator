@@ -25,8 +25,8 @@ for i in range(steps):
     volumes[i] = vol
 
     k = i // interval
-    price_matrix[: price + 1, k] = sim.obook.buy[: price + 1]
-    price_matrix[price:, k] = -sim.obook.sell[price:]
+    price_matrix[: price + 1, k] = sim.obook.bids[: price + 1]
+    price_matrix[price:, k] = -sim.obook.asks[price:]
 
     print(k, price)
 
@@ -86,20 +86,20 @@ fig.add_trace(
     secondary_y=False,
 )
 fig.update_layout(
-    yaxis_title="Цена",
+    yaxis_title="Price",
     xaxis_rangeslider_visible=False,
     showlegend=True,
     legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
     template="plotly_dark",
-    yaxis=dict(title="Цена", anchor="x"),
+    yaxis=dict(title="Price", anchor="x"),
 )
 fig.show()
 
-buy_depth = np.cumsum(sim.obook.buy[::-1])[::-1]
-sell_depth = np.cumsum(sim.obook.sell)
+buy_depth = np.cumsum(sim.obook.bids[::-1])[::-1]
+sell_depth = np.cumsum(sim.obook.asks)
 
-buy_prices = np.arange(len(sim.obook.buy))
-sell_prices = np.arange(len(sim.obook.sell))
+buy_prices = np.arange(len(sim.obook.bids))
+sell_prices = np.arange(len(sim.obook.asks))
 
 fig_depth = go.Figure()
 
