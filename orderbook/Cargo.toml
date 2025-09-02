@@ -1,0 +1,11 @@
+[package]
+name = "orderbook"
+version = "0.1.0"
+edition = "2024"
+[lib]
+name = "orderbook"
+crate-type = ["cdylib"]
+
+[dependencies]
+ordered-float = "5.0.0"
+pyo3 = { version = "0.25.1", features = ["extension-module"] }
