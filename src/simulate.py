@@ -1,28 +1,27 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from copy import deepcopy
+from datetime import datetime
+
 import numpy as np
-import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from .simulation import Simulation
+from .utils import to_dataframe
 
 omax = 4000
-
 steps = 30000
-
+forward = 900
 interval = 30
 
 sim = Simulation(omax, omax // 2)
 
+prices, volumes = np.zeros([steps]), np.zeros([steps])
 price_matrix = np.full((omax, steps // interval), np.nan)
-
-prices = np.zeros([steps])
-volumes = np.zeros([steps])
 
 for i in range(steps):
     price, vol = sim.step()
-
-    prices[i] = price
-    volumes[i] = vol
+    prices[i], volumes[i] = price, vol
 
     k = i // interval
     price_matrix[: price + 1, k] = sim.obook.bids[: price + 1]
@@ -31,31 +30,7 @@ for i in range(steps):
     print(k, price)
 
 
-def to_ohlcv(prices, volumes, interval=60):
-    cut_len = (len(prices) // interval) * interval
-
-    prices = prices[:cut_len]
-    volumes = volumes[:cut_len]
-
-    price_reshaped = prices.reshape(-1, interval)
-    volume_reshaped = volumes.reshape(-1, interval)
-
-    ohlcv = np.column_stack(
-        (
-            price_reshaped[:, 0],
-            price_reshaped.max(axis=1),
-            price_reshaped.min(axis=1),
-            price_reshaped[:, -1],
-            volume_reshaped.sum(axis=1),
-        )
-    )
-
-    return ohlcv
-
-
-ohlcv = to_ohlcv(prices, volumes, interval)
-columns = pd.Index(["open", "high", "low", "close", "volume"])
-df = pd.DataFrame(ohlcv, columns=columns)
+df = to_dataframe(prices, volumes, interval)
 
 fig = make_subplots(
     rows=1,
@@ -85,6 +60,7 @@ fig.add_trace(
     col=1,
     secondary_y=False,
 )
+
 fig.update_layout(
     yaxis_title="Price",
     xaxis_rangeslider_visible=False,
@@ -94,6 +70,49 @@ fig.update_layout(
     yaxis=dict(title="Price", anchor="x"),
 )
 fig.show()
+
+
+def run_simulation():
+    rsim = deepcopy(sim)
+    heatmap = np.zeros((omax, forward // interval), dtype=int)
+
+    for i in range(forward):
+        price, _ = rsim.step()
+        heatmap[price, i // interval] += 1
+
+    return heatmap
+
+
+now = datetime.now()
+heatmap = np.zeros((omax, forward // interval), dtype=int)
+with ThreadPoolExecutor(max_workers=1) as executor:
+    futures = [executor.submit(run_simulation) for _ in range(100)]
+
+    for f in as_completed(futures):
+        heatmap += f.result()
+
+print(datetime.now() - now)
+
+fig = make_subplots(
+    rows=1,
+    cols=1,
+    shared_xaxes=True,
+    vertical_spacing=0.02,
+)
+
+fig.add_trace(
+    go.Heatmap(
+        z=heatmap,
+        showscale=True,
+    ),
+    row=1,
+    col=1,
+    secondary_y=False,
+)
+fig.show()
+
+
+exit()
 
 buy_depth = np.cumsum(sim.obook.bids[::-1])[::-1]
 sell_depth = np.cumsum(sim.obook.asks)
