@@ -1,8 +1,16 @@
 import ctypes
 import os
+import sys
 from ctypes import POINTER, byref, c_float, c_uint
 
-_lib_path = os.path.join(os.path.dirname(__file__), "optim.so")
+if sys.platform.startswith("linux"):
+    libname = "optim.so"
+elif sys.platform.startswith("win"):
+    libname = "optim.dll"
+else:
+    libname = "optim.so"  #  ?
+
+_lib_path = os.path.join(os.path.dirname(__file__), libname)
 
 lib = ctypes.CDLL(_lib_path)
 
