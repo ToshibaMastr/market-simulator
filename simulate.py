@@ -7,8 +7,8 @@ from plotly.subplots import make_subplots
 from rich.console import Console
 from rich.progress import BarColumn, Progress, TimeRemainingColumn
 
-from .simulation import Simulation
-from .utils import to_dataframe
+from src.simulation import Simulation
+from src.utils import to_dataframe
 
 omax = 4000
 steps = 30000
@@ -62,7 +62,7 @@ fig.add_trace(
     go.Heatmap(
         z=price_matrix,
         colorscale=[[0.0, "red"], [0.5, "black"], [1.0, "green"]],
-        colorbar=dict(title="Price"),
+        colorbar=dict(title="OBook"),
         showscale=True,
         zmin=-np.max(price_matrix),
         zmid=0,
